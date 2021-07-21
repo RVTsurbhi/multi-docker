@@ -1,0 +1,26 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  # look into the client dir to get the build context
+  # as we need to run the test we will user dockerfile.dev
+  # while creating build instead of using '.' we will use ./client (bcz its located in nested folder)
+  - docker build -t surbhirvt/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run surbhirvt/react-test npm test -- --coverage
+
+after_success:
+  - docker build -t surbhirvt/multi-client ./client
+  - docker build -t surbhirvt/multi-nginx ./nginx
+  - docker build -t surbhirvt/multi-server ./server
+  - docker build -t surbhirvt/multi-worker ./worker
+
+  # login to docker cli (cmd --> docker login)
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those images and push them to docker hub
+  - docker push surbhirvt/multi-client
+  - docker push surbhirvt/multi-nginx
+  - docker push surbhirvt/multi-server
+  - docker push surbhirvt/multi-worker
